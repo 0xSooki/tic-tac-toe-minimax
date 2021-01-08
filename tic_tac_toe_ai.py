@@ -6,6 +6,7 @@ class Player(object):
         self.name = name
         self.score = score
         self.marker = marker
+        self.depth = 0
     
     def win(self):
         self.score += 1
@@ -79,18 +80,59 @@ class playingField(object):
 
     def space_check(self, pos):
         return self.field[pos[0]][pos[1]] == " "
+            
+    def win_check(self):
+        if board_is_full():
+            return "tie"
+        elif (self.field[0][0] == self.field[1][1] == self.field[2][2]) or (self.field[0][2] == self.field[1][1] == self.field[2][0]):
+            return self.field[1][1]
+        for r in range(3):
+            if (self.field[r][0] == self.field[r][1] == self.field[r][2] == "O" or "X"):
+                return self.field[r][0]
 
-    def win_check(self, pos, player):
-        if self.field[pos[0]][0] == self.field[pos[0]][1] == self.field[pos[0]][2] == player:
-            return True
-        elif self.field[0][pos[1]] == self.field[1][pos[1]] == self.field[2][pos[1]] == player:
-            return True
-        elif self.field[0][0] == self.field[1][1] == self.field[2][2] == player:
-            return True
-        elif self.field[0][2] == self.field[1][1] == self.field[2][0] == player:
-            return True
+            elif (self.field[0][r] == self.field[1][r] == self.field[2][r] == "O" or "X"):
+                return self.field[0][r]
         else:
             return False
+
+    def minimax(self, depth, board, maximizing):
+        result = win_check()
+        if result != False:
+            score = scores[result]
+            return score
+
+        if maximising:
+            bestScore = -math.inf
+            for r in board:
+                for c in r:
+                    if board[r][c] == " ":
+                        board[r][c] = ai.marker
+                        score = minimax(board, depth+=1, false)
+                        board[r][c] = " "
+                        bestScore = max(score, bestScore)
+            return bestScore
+        else:
+            bestScore = math.inf
+            for r in board:
+                for c in r:
+                    if board[r][c] = " ":
+                        board[r][c] = player2.marker
+                        score = minimax(board, depth+=1, false)
+                        board[r][c] = " "
+                        bestScore = min(score, bestScore)
+
+    def bestMove(self):
+        best_score = -math.inf
+        for r in board:
+            for c in r:
+                if board[r][c] = " ":
+                    board[r][c] = ai
+                    score = minimax(0 ,board, true)
+                    if score > best_score:
+                        best_score = score
+                        best_move = (r, c)
+                    board[r][c] = " "
+        self.board[best_move[0], best_move[1]]
     
 def main():
     playing = True
@@ -110,7 +152,7 @@ def main():
         current_player = player1
 
         board.reset_board()
-        
+
         game_on = True
 
         while game_on:
@@ -133,15 +175,18 @@ def main():
 
             board.set_marker(board.convert_to_coord(pos), current_player.marker)
 
-            if board.win_check(board.convert_to_coord(pos), current_player.marker):
-                print(f"{current_player.name} won!")
-                current_player.win()
-                game_on = False
+            win = board.win_check()
 
-            elif board.board_is_full():
-                print("Tie!")
-                
-                game_on = False
+            if win != False:
+
+                if win == "tie":
+                    print("Tie!")
+                    game_on = False
+
+                else:
+                    print(f"{current_player.name} won!")
+                    current_player.win()
+                    game_on = False
 
             if game_on == False:
                 board.show_board()
