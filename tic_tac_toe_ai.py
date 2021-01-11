@@ -2,11 +2,10 @@ import math
 import random
 
 class Player(object):
-    def __init__(self, name, score, marker):
-        self.name = name
-        self.score = score
+    def __init__(self, marker, isMaximizing):
+        self.score = 0
         self.marker = marker
-        self.depth = 0
+        self.isMaximizing = isMaximizing
     
     def win(self):
         self.score += 1
@@ -20,8 +19,12 @@ class Player(object):
     def show_score(self):
         print(f"{self.name} has {self.score} points")
 
+ai = Player("X", True)
+human = Player("O", False)
+
 class playingField(object):
     def __init__(self):
+        self.depth = 0
         self.scores = {
             "X": 1,
             "O": -1,
@@ -29,7 +32,7 @@ class playingField(object):
         }
         self.field = [
             [" ", " ", " "],
-            [" ", " ", " "],
+            [" ", "O", " "],
             [" ", " ", " "]
         ]
     
@@ -82,64 +85,53 @@ class playingField(object):
         return self.field[pos[0]][pos[1]] == " "
             
     def win_check(self):
-        if board_is_full():
+        if self.board_is_full():
             return "tie"
-        elif (self.field[0][0] == self.field[1][1] == self.field[2][2]) or (self.field[0][2] == self.field[1][1] == self.field[2][0]):
+        elif (self.field[0][0] == self.field[1][1] == self.field[2][2] and self.field[1][1] in "XO") or (self.field[0][2] == self.field[1][1] == self.field[2][0] and self.field[1][1] in "XO"):
             return self.field[1][1]
         for r in range(3):
-            if (self.field[r][0] == self.field[r][1] == self.field[r][2] == "O" or "X"):
+            if (self.field[r][0] == self.field[r][1] == self.field[r][2] and self.field[r][0] in "XO"):
                 return self.field[r][0]
 
-            elif (self.field[0][r] == self.field[1][r] == self.field[2][r] == "O" or "X"):
+            elif (self.field[0][r] == self.field[1][r] == self.field[2][r] and self.field[0][r] in "XO"):
                 return self.field[0][r]
         else:
             return False
 
-    def minimax(self, depth, board, maximizing):
-        result = win_check()
-        if result != False:
-            score = scores[result]
-            return score
+    def minimax(self, depth, player):
 
-        if maximising:
-            bestScore = -math.inf
-            for r in board:
-                for c in r:
-                    if board[r][c] == " ":
-                        board[r][c] = ai.marker
-                        score = minimax(board, depth+=1, false)
-                        board[r][c] = " "
-                        bestScore = max(score, bestScore)
-            return bestScore
+        if player.isMaximizing:
+            best = [-1, -1, -math.inf]
         else:
-            bestScore = math.inf
-            for r in board:
-                for c in r:
-                    if board[r][c] = " ":
-                        board[r][c] = player2.marker
-                        score = minimax(board, depth+=1, false)
-                        board[r][c] = " "
-                        bestScore = min(score, bestScore)
+            best = [-1, -1, math.inf]
+        
+        result = self.win_check()
+        if result != False:
+            score = self.scores[result]
+            return [-1, -1, score]
 
-    def bestMove(self):
-        best_score = -math.inf
-        for r in board:
-            for c in r:
-                if board[r][c] = " ":
-                    board[r][c] = ai
-                    score = minimax(0 ,board, true)
-                    if score > best_score:
-                        best_score = score
-                        best_move = (r, c)
-                    board[r][c] = " "
-        self.board[best_move[0], best_move[1]]
-    
+        for x in range(3):
+            for y in range(3):
+                if self.field[x][y] == " ":
+                    self.field[x][y] = player.marker
+                    if player.isMaximizing:
+                        score = self.minimax(depth+1, human)
+                    else:
+                        score = self.minimax(depth+1, ai)
+                    self.field[x][y] = " "
+                    score[0], score[1] = x, y
+
+                    if player.isMaximizing:
+                        if score[-1] > best[-1]:
+                            best = score
+                    else:
+                        if score[-1] < best[-1]:
+                            best = score
+        return best
+
 def main():
     playing = True
     game_on = True
-
-    player1 = Player(str(input("Enter the name of the first player: ")), 0, "X")
-    player2 = Player(str(input("Enter the name of the second player: ")), 0, "O")
 
     board = playingField()
     pos = 0
@@ -149,18 +141,20 @@ def main():
     print("7|8|9")
 
     while playing:
-        current_player = player1
-
         board.reset_board()
 
         game_on = True
 
         while game_on:
             board.show_board()
-
+            move = board.minimax(board.depth, ai)
+            board.field[move[0]][move[1]] = "X"
+            win = board.win_check()
             #validate user input
-            while True:
-                pos = input(f"{current_player.name} declare your move: ")
+            while True and win == False:
+                
+                board.show_board()
+                pos = input("Declare your move: ")
                 try:
                     pos = int(pos)
                 except ValueError:
@@ -173,9 +167,7 @@ def main():
                 else:
                     print("Invalid target!")
 
-            board.set_marker(board.convert_to_coord(pos), current_player.marker)
-
-            win = board.win_check()
+            board.set_marker(board.convert_to_coord(pos), human.marker)
 
             if win != False:
 
@@ -183,15 +175,19 @@ def main():
                     print("Tie!")
                     game_on = False
 
+                elif win == "X":
+                    print("The ai won!")
+                    ai.score += 1
+                    game_on = False
                 else:
-                    print(f"{current_player.name} won!")
-                    current_player.win()
+                    print("You won")
+                    human.score += 1
                     game_on = False
 
             if game_on == False:
                 board.show_board()
                 print("--------------------------")
-                print(f"{player1.name}:{player1.score}/{player2.name}:{player2.score}")
+                print(f"ai:{ai.score}/you:{human.score}")
                 print("--------------------------")
                 if str(input("Do you want to play again? [Y/N] ")).lower() == "y":
                     playing = True
@@ -199,11 +195,6 @@ def main():
                 else:
                     playing = False
                     break
-
-            if current_player == player1:
-                current_player = player2
-            else:
-                current_player = player1
 
 if __name__ == "__main__":
     main()
